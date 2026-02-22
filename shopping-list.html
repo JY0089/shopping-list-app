@@ -82,6 +82,11 @@
       background: #5a67d8;
     }
 
+    .input-row button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
     .stats {
       display: flex;
       justify-content: space-between;
@@ -207,6 +212,42 @@
       color: #a0aec0;
       background: none;
     }
+
+    .status-bar {
+      font-size: 0.8rem;
+      color: #a0aec0;
+      text-align: right;
+      margin-bottom: 8px;
+      min-height: 1.2em;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .status-bar.error {
+      color: #fc8181;
+    }
+
+    .realtime-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #cbd5e0;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .realtime-dot.connected {
+      background: #48bb78;
+      box-shadow: 0 0 0 2px #c6f6d5;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 2px #c6f6d5; }
+      50% { box-shadow: 0 0 0 4px #9ae6b4; }
+    }
   </style>
 </head>
 <body>
@@ -215,12 +256,17 @@
 
     <div class="input-row">
       <input id="itemInput" type="text" placeholder="아이템 입력..." autocomplete="off" />
-      <button onclick="addItem()">추가</button>
+      <button id="addBtn" onclick="addItem()">추가</button>
     </div>
 
     <div class="stats">
       <span>총 <strong id="totalCount">0</strong>개</span>
       <span class="done">완료 <strong id="doneCount">0</strong>개</span>
+    </div>
+
+    <div id="statusBar" class="status-bar">
+      <span id="statusText"></span>
+      <div id="realtimeDot" class="realtime-dot" title="실시간 연결 상태"></div>
     </div>
 
     <ul id="list"></ul>
@@ -235,8 +281,13 @@
     </button>
   </div>
 
-  <script>
-    let items = JSON.parse(localStorage.getItem('shopping-list') || '[]');
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    const SUPABASE_URL = 'https://kpsdmslrfczumbixrmkl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwc2Rtc2xyZmN6dW1iaXhybWtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MjEwNDksImV4cCI6MjA4NzI5NzA0OX0.ppLreNPUABpPALdt-ycGT8N2hVpSF7PRR3tWik9JAK0';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const listEl = document.getElementById('list');
     const inputEl = document.getElementById('itemInput');
@@ -244,32 +295,59 @@
     const totalCount = document.getElementById('totalCount');
     const doneCount = document.getElementById('doneCount');
     const clearBtn = document.getElementById('clearBtn');
+    const addBtn = document.getElementById('addBtn');
+    const statusText = document.getElementById('statusText');
+    const realtimeDot = document.getElementById('realtimeDot');
 
-    function save() {
-      localStorage.setItem('shopping-list', JSON.stringify(items));
+    let items = [];
+
+    function setStatus(msg, isError = false) {
+      statusText.textContent = msg;
+      statusText.style.color = isError ? '#fc8181' : '#a0aec0';
+    }
+
+    function setRealtime(connected) {
+      realtimeDot.classList.toggle('connected', connected);
+      realtimeDot.title = connected ? '실시간 연결됨' : '연결 중...';
+    }
+
+    async function fetchItems() {
+      setStatus('불러오는 중...');
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        setStatus('데이터 불러오기 실패', true);
+        return;
+      }
+      items = data;
+      setStatus('');
+      render();
     }
 
     function render() {
       listEl.innerHTML = '';
-      items.forEach((item, i) => {
+      items.forEach((item) => {
         const li = document.createElement('li');
         if (item.checked) li.classList.add('checked');
 
         const checkbox = document.createElement('div');
         checkbox.className = 'checkbox';
         checkbox.textContent = item.checked ? '✓' : '';
-        checkbox.onclick = () => toggleItem(i);
+        checkbox.onclick = () => toggleItem(item);
 
         const text = document.createElement('span');
         text.className = 'item-text';
         text.textContent = item.name;
-        text.onclick = () => toggleItem(i);
+        text.onclick = () => toggleItem(item);
 
         const del = document.createElement('button');
         del.className = 'delete-btn';
         del.textContent = '✕';
         del.title = '삭제';
-        del.onclick = () => deleteItem(i);
+        del.onclick = () => deleteItem(item.id);
 
         li.append(checkbox, text, del);
         listEl.appendChild(li);
@@ -283,39 +361,112 @@
       clearBtn.disabled = done === 0;
     }
 
-    function addItem() {
+    async function addItem() {
       const name = inputEl.value.trim();
       if (!name) return;
-      items.push({ name, checked: false });
+
+      addBtn.disabled = true;
       inputEl.value = '';
-      save();
-      render();
       inputEl.focus();
+
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .insert({ name, checked: false })
+        .select()
+        .single();
+
+      if (error) {
+        setStatus('추가 실패', true);
+        inputEl.value = name; // 실패 시 입력값 복원
+      } else {
+        // 현재 탭 즉시 반영 (Realtime 이벤트 도착 전 선반영)
+        if (!items.find(i => i.id === data.id)) {
+          items.push(data);
+          items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          render();
+        }
+      }
+      addBtn.disabled = false;
     }
 
-    function toggleItem(i) {
-      items[i].checked = !items[i].checked;
-      save();
-      render();
+    async function toggleItem(item) {
+      const newChecked = !item.checked;
+      const { error } = await supabase
+        .from('shopping_items')
+        .update({ checked: newChecked })
+        .eq('id', item.id);
+
+      if (error) {
+        setStatus('업데이트 실패', true);
+      } else {
+        const idx = items.findIndex(i => i.id === item.id);
+        if (idx !== -1) { items[idx].checked = newChecked; render(); }
+      }
     }
 
-    function deleteItem(i) {
-      items.splice(i, 1);
-      save();
-      render();
+    async function deleteItem(id) {
+      const { error } = await supabase
+        .from('shopping_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        setStatus('삭제 실패', true);
+      } else {
+        items = items.filter(i => i.id !== id);
+        render();
+      }
     }
 
-    function clearChecked() {
-      items = items.filter(it => !it.checked);
-      save();
-      render();
+    async function clearChecked() {
+      const checkedIds = items.filter(i => i.checked).map(i => i.id);
+      const { error } = await supabase
+        .from('shopping_items')
+        .delete()
+        .in('id', checkedIds);
+
+      if (error) {
+        setStatus('삭제 실패', true);
+      } else {
+        items = items.filter(i => !i.checked);
+        render();
+      }
     }
+
+    // Realtime 구독 - 모든 변경사항을 WebSocket으로 수신
+    supabase
+      .channel('shopping_items_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shopping_items' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            if (!items.find(i => i.id === payload.new.id)) {
+              items.push(payload.new);
+              items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const idx = items.findIndex(i => i.id === payload.new.id);
+            if (idx !== -1) items[idx] = payload.new;
+          } else if (payload.eventType === 'DELETE') {
+            items = items.filter(i => i.id !== payload.old.id);
+          }
+          render();
+        }
+      )
+      .subscribe((status) => {
+        setRealtime(status === 'SUBSCRIBED');
+      });
 
     inputEl.addEventListener('keydown', e => {
       if (e.key === 'Enter') addItem();
     });
 
-    render();
+    // 전역으로 노출 (onclick 속성에서 사용)
+    window.addItem = addItem;
+    window.clearChecked = clearChecked;
+
+    fetchItems();
   </script>
 </body>
 </html>

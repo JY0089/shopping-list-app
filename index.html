@@ -369,23 +369,39 @@
       inputEl.value = '';
       inputEl.focus();
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('shopping_items')
-        .insert({ name, checked: false });
+        .insert({ name, checked: false })
+        .select()
+        .single();
 
-      if (error) setStatus('추가 실패', true);
+      if (error) {
+        setStatus('추가 실패', true);
+        inputEl.value = name; // 실패 시 입력값 복원
+      } else {
+        // 현재 탭 즉시 반영 (Realtime 이벤트 도착 전 선반영)
+        if (!items.find(i => i.id === data.id)) {
+          items.push(data);
+          items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          render();
+        }
+      }
       addBtn.disabled = false;
-      // UI 업데이트는 Realtime 구독이 처리
     }
 
     async function toggleItem(item) {
+      const newChecked = !item.checked;
       const { error } = await supabase
         .from('shopping_items')
-        .update({ checked: !item.checked })
+        .update({ checked: newChecked })
         .eq('id', item.id);
 
-      if (error) setStatus('업데이트 실패', true);
-      // UI 업데이트는 Realtime 구독이 처리
+      if (error) {
+        setStatus('업데이트 실패', true);
+      } else {
+        const idx = items.findIndex(i => i.id === item.id);
+        if (idx !== -1) { items[idx].checked = newChecked; render(); }
+      }
     }
 
     async function deleteItem(id) {
@@ -394,8 +410,12 @@
         .delete()
         .eq('id', id);
 
-      if (error) setStatus('삭제 실패', true);
-      // UI 업데이트는 Realtime 구독이 처리
+      if (error) {
+        setStatus('삭제 실패', true);
+      } else {
+        items = items.filter(i => i.id !== id);
+        render();
+      }
     }
 
     async function clearChecked() {
@@ -405,8 +425,12 @@
         .delete()
         .in('id', checkedIds);
 
-      if (error) setStatus('삭제 실패', true);
-      // UI 업데이트는 Realtime 구독이 처리
+      if (error) {
+        setStatus('삭제 실패', true);
+      } else {
+        items = items.filter(i => !i.checked);
+        render();
+      }
     }
 
     // Realtime 구독 - 모든 변경사항을 WebSocket으로 수신
