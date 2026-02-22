@@ -82,6 +82,11 @@
       background: #5a67d8;
     }
 
+    .input-row button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
     .stats {
       display: flex;
       justify-content: space-between;
@@ -207,6 +212,18 @@
       color: #a0aec0;
       background: none;
     }
+
+    .status-bar {
+      font-size: 0.8rem;
+      color: #a0aec0;
+      text-align: right;
+      margin-bottom: 8px;
+      min-height: 1.2em;
+    }
+
+    .status-bar.error {
+      color: #fc8181;
+    }
   </style>
 </head>
 <body>
@@ -215,13 +232,15 @@
 
     <div class="input-row">
       <input id="itemInput" type="text" placeholder="아이템 입력..." autocomplete="off" />
-      <button onclick="addItem()">추가</button>
+      <button id="addBtn" onclick="addItem()">추가</button>
     </div>
 
     <div class="stats">
       <span>총 <strong id="totalCount">0</strong>개</span>
       <span class="done">완료 <strong id="doneCount">0</strong>개</span>
     </div>
+
+    <div id="statusBar" class="status-bar"></div>
 
     <ul id="list"></ul>
 
@@ -235,8 +254,15 @@
     </button>
   </div>
 
-  <script>
-    let items = JSON.parse(localStorage.getItem('shopping-list') || '[]');
+  <script type="module">
+    const SUPABASE_URL = 'https://kpsdmslrfczumbixrmkl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwc2Rtc2xyZmN6dW1iaXhybWtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MjEwNDksImV4cCI6MjA4NzI5NzA0OX0.ppLreNPUABpPALdt-ycGT8N2hVpSF7PRR3tWik9JAK0';
+
+    const headers = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    };
 
     const listEl = document.getElementById('list');
     const inputEl = document.getElementById('itemInput');
@@ -244,32 +270,52 @@
     const totalCount = document.getElementById('totalCount');
     const doneCount = document.getElementById('doneCount');
     const clearBtn = document.getElementById('clearBtn');
+    const addBtn = document.getElementById('addBtn');
+    const statusBar = document.getElementById('statusBar');
 
-    function save() {
-      localStorage.setItem('shopping-list', JSON.stringify(items));
+    let items = [];
+
+    function setStatus(msg, isError = false) {
+      statusBar.textContent = msg;
+      statusBar.className = 'status-bar' + (isError ? ' error' : '');
+    }
+
+    async function fetchItems() {
+      setStatus('불러오는 중...');
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/shopping_items?select=*&order=created_at.asc`,
+        { headers }
+      );
+      if (!res.ok) {
+        setStatus('데이터 불러오기 실패', true);
+        return;
+      }
+      items = await res.json();
+      setStatus('');
+      render();
     }
 
     function render() {
       listEl.innerHTML = '';
-      items.forEach((item, i) => {
+      items.forEach((item) => {
         const li = document.createElement('li');
         if (item.checked) li.classList.add('checked');
 
         const checkbox = document.createElement('div');
         checkbox.className = 'checkbox';
         checkbox.textContent = item.checked ? '✓' : '';
-        checkbox.onclick = () => toggleItem(i);
+        checkbox.onclick = () => toggleItem(item);
 
         const text = document.createElement('span');
         text.className = 'item-text';
         text.textContent = item.name;
-        text.onclick = () => toggleItem(i);
+        text.onclick = () => toggleItem(item);
 
         const del = document.createElement('button');
         del.className = 'delete-btn';
         del.textContent = '✕';
         del.title = '삭제';
-        del.onclick = () => deleteItem(i);
+        del.onclick = () => deleteItem(item.id);
 
         li.append(checkbox, text, del);
         listEl.appendChild(li);
@@ -283,31 +329,83 @@
       clearBtn.disabled = done === 0;
     }
 
-    function addItem() {
+    async function addItem() {
       const name = inputEl.value.trim();
       if (!name) return;
-      items.push({ name, checked: false });
+
+      addBtn.disabled = true;
+      setStatus('추가 중...');
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/shopping_items`, {
+        method: 'POST',
+        headers: { ...headers, 'Prefer': 'return=representation' },
+        body: JSON.stringify({ name, checked: false }),
+      });
+
+      if (!res.ok) {
+        setStatus('추가 실패', true);
+        addBtn.disabled = false;
+        return;
+      }
+
+      const [newItem] = await res.json();
+      items.push(newItem);
       inputEl.value = '';
-      save();
+      setStatus('');
       render();
       inputEl.focus();
+      addBtn.disabled = false;
     }
 
-    function toggleItem(i) {
-      items[i].checked = !items[i].checked;
-      save();
+    async function toggleItem(item) {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/shopping_items?id=eq.${item.id}`,
+        {
+          method: 'PATCH',
+          headers: { ...headers, 'Prefer': 'return=representation' },
+          body: JSON.stringify({ checked: !item.checked }),
+        }
+      );
+
+      if (!res.ok) {
+        setStatus('업데이트 실패', true);
+        return;
+      }
+
+      const [updated] = await res.json();
+      const idx = items.findIndex(i => i.id === item.id);
+      if (idx !== -1) items[idx] = updated;
       render();
     }
 
-    function deleteItem(i) {
-      items.splice(i, 1);
-      save();
+    async function deleteItem(id) {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/shopping_items?id=eq.${id}`,
+        { method: 'DELETE', headers }
+      );
+
+      if (!res.ok) {
+        setStatus('삭제 실패', true);
+        return;
+      }
+
+      items = items.filter(i => i.id !== id);
       render();
     }
 
-    function clearChecked() {
-      items = items.filter(it => !it.checked);
-      save();
+    async function clearChecked() {
+      const checkedIds = items.filter(i => i.checked).map(i => `"${i.id}"`).join(',');
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/shopping_items?id=in.(${checkedIds})`,
+        { method: 'DELETE', headers }
+      );
+
+      if (!res.ok) {
+        setStatus('삭제 실패', true);
+        return;
+      }
+
+      items = items.filter(i => !i.checked);
       render();
     }
 
@@ -315,7 +413,11 @@
       if (e.key === 'Enter') addItem();
     });
 
-    render();
+    // 전역으로 노출 (onclick 속성에서 사용)
+    window.addItem = addItem;
+    window.clearChecked = clearChecked;
+
+    fetchItems();
   </script>
 </body>
 </html>
