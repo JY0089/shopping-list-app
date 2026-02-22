@@ -219,10 +219,34 @@
       text-align: right;
       margin-bottom: 8px;
       min-height: 1.2em;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
     }
 
     .status-bar.error {
       color: #fc8181;
+    }
+
+    .realtime-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #cbd5e0;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .realtime-dot.connected {
+      background: #48bb78;
+      box-shadow: 0 0 0 2px #c6f6d5;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 2px #c6f6d5; }
+      50% { box-shadow: 0 0 0 4px #9ae6b4; }
     }
   </style>
 </head>
@@ -240,7 +264,10 @@
       <span class="done">완료 <strong id="doneCount">0</strong>개</span>
     </div>
 
-    <div id="statusBar" class="status-bar"></div>
+    <div id="statusBar" class="status-bar">
+      <span id="statusText"></span>
+      <div id="realtimeDot" class="realtime-dot" title="실시간 연결 상태"></div>
+    </div>
 
     <ul id="list"></ul>
 
@@ -255,14 +282,12 @@
   </div>
 
   <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
     const SUPABASE_URL = 'https://kpsdmslrfczumbixrmkl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwc2Rtc2xyZmN6dW1iaXhybWtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MjEwNDksImV4cCI6MjA4NzI5NzA0OX0.ppLreNPUABpPALdt-ycGT8N2hVpSF7PRR3tWik9JAK0';
 
-    const headers = {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    };
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const listEl = document.getElementById('list');
     const inputEl = document.getElementById('itemInput');
@@ -271,26 +296,33 @@
     const doneCount = document.getElementById('doneCount');
     const clearBtn = document.getElementById('clearBtn');
     const addBtn = document.getElementById('addBtn');
-    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    const realtimeDot = document.getElementById('realtimeDot');
 
     let items = [];
 
     function setStatus(msg, isError = false) {
-      statusBar.textContent = msg;
-      statusBar.className = 'status-bar' + (isError ? ' error' : '');
+      statusText.textContent = msg;
+      statusText.style.color = isError ? '#fc8181' : '#a0aec0';
+    }
+
+    function setRealtime(connected) {
+      realtimeDot.classList.toggle('connected', connected);
+      realtimeDot.title = connected ? '실시간 연결됨' : '연결 중...';
     }
 
     async function fetchItems() {
       setStatus('불러오는 중...');
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/shopping_items?select=*&order=created_at.asc`,
-        { headers }
-      );
-      if (!res.ok) {
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
         setStatus('데이터 불러오기 실패', true);
         return;
       }
-      items = await res.json();
+      items = data;
       setStatus('');
       render();
     }
@@ -334,80 +366,73 @@
       if (!name) return;
 
       addBtn.disabled = true;
-      setStatus('추가 중...');
-
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/shopping_items`, {
-        method: 'POST',
-        headers: { ...headers, 'Prefer': 'return=representation' },
-        body: JSON.stringify({ name, checked: false }),
-      });
-
-      if (!res.ok) {
-        setStatus('추가 실패', true);
-        addBtn.disabled = false;
-        return;
-      }
-
-      const [newItem] = await res.json();
-      items.push(newItem);
       inputEl.value = '';
-      setStatus('');
-      render();
       inputEl.focus();
+
+      const { error } = await supabase
+        .from('shopping_items')
+        .insert({ name, checked: false });
+
+      if (error) setStatus('추가 실패', true);
       addBtn.disabled = false;
+      // UI 업데이트는 Realtime 구독이 처리
     }
 
     async function toggleItem(item) {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/shopping_items?id=eq.${item.id}`,
-        {
-          method: 'PATCH',
-          headers: { ...headers, 'Prefer': 'return=representation' },
-          body: JSON.stringify({ checked: !item.checked }),
-        }
-      );
+      const { error } = await supabase
+        .from('shopping_items')
+        .update({ checked: !item.checked })
+        .eq('id', item.id);
 
-      if (!res.ok) {
-        setStatus('업데이트 실패', true);
-        return;
-      }
-
-      const [updated] = await res.json();
-      const idx = items.findIndex(i => i.id === item.id);
-      if (idx !== -1) items[idx] = updated;
-      render();
+      if (error) setStatus('업데이트 실패', true);
+      // UI 업데이트는 Realtime 구독이 처리
     }
 
     async function deleteItem(id) {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/shopping_items?id=eq.${id}`,
-        { method: 'DELETE', headers }
-      );
+      const { error } = await supabase
+        .from('shopping_items')
+        .delete()
+        .eq('id', id);
 
-      if (!res.ok) {
-        setStatus('삭제 실패', true);
-        return;
-      }
-
-      items = items.filter(i => i.id !== id);
-      render();
+      if (error) setStatus('삭제 실패', true);
+      // UI 업데이트는 Realtime 구독이 처리
     }
 
     async function clearChecked() {
-      const checkedIds = items.filter(i => i.checked).map(i => `"${i.id}"`).join(',');
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/shopping_items?id=in.(${checkedIds})`,
-        { method: 'DELETE', headers }
-      );
+      const checkedIds = items.filter(i => i.checked).map(i => i.id);
+      const { error } = await supabase
+        .from('shopping_items')
+        .delete()
+        .in('id', checkedIds);
 
-      if (!res.ok) {
-        setStatus('삭제 실패', true);
-        return;
-      }
-
-      items = items.filter(i => !i.checked);
-      render();
+      if (error) setStatus('삭제 실패', true);
+      // UI 업데이트는 Realtime 구독이 처리
     }
+
+    // Realtime 구독 - 모든 변경사항을 WebSocket으로 수신
+    supabase
+      .channel('shopping_items_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shopping_items' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            if (!items.find(i => i.id === payload.new.id)) {
+              items.push(payload.new);
+              items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const idx = items.findIndex(i => i.id === payload.new.id);
+            if (idx !== -1) items[idx] = payload.new;
+          } else if (payload.eventType === 'DELETE') {
+            items = items.filter(i => i.id !== payload.old.id);
+          }
+          render();
+        }
+      )
+      .subscribe((status) => {
+        setRealtime(status === 'SUBSCRIBED');
+      });
 
     inputEl.addEventListener('keydown', e => {
       if (e.key === 'Enter') addItem();
