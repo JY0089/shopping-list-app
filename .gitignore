@@ -1,0 +1,4 @@
+node_modules/
+.playwright-mcp/
+.claude/settings.local.json
+package-lock.json
