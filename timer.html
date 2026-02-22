@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>⏱ 1시간 카운트다운</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 15cm;
+      height: 15cm;
+      overflow: hidden;
+      background: #0d0d1a;
+      font-family: 'Courier New', monospace;
+    }
+
+    .wrap {
+      width: 15cm;
+      height: 15cm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45cm;
+    }
+
+    /* 상단 라벨 */
+    .label {
+      font-size: 0.45cm;
+      color: #445;
+      letter-spacing: 0.12cm;
+      text-transform: uppercase;
+    }
+
+    /* 원형 링 */
+    .ring-wrap {
+      position: relative;
+      width: 7cm;
+      height: 7cm;
+    }
+    .ring-wrap svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-bg   { fill: none; stroke: #1a1a2e; stroke-width: 18; }
+    .ring-fill {
+      fill: none;
+      stroke: #00e5ff;
+      stroke-width: 18;
+      stroke-linecap: round;
+      stroke-dasharray: 879.6;   /* 2π × r(140) */
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke 1s;
+      filter: drop-shadow(0 0 6px #00e5ff88);
+    }
+    .ring-fill.warn   { stroke: #ff9800; filter: drop-shadow(0 0 6px #ff980088); }
+    .ring-fill.danger { stroke: #f44336; filter: drop-shadow(0 0 6px #f4433688); }
+
+    /* 원 안 시간 */
+    .ring-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.1cm;
+    }
+    .time {
+      font-size: 1.35cm;
+      font-weight: bold;
+      color: #00e5ff;
+      letter-spacing: 0.05cm;
+      text-shadow: 0 0 0.5cm rgba(0,229,255,0.5);
+      transition: color 0.3s, text-shadow 0.3s;
+    }
+    .time.warn   { color: #ff9800; text-shadow: 0 0 0.5cm rgba(255,152,0,0.5); }
+    .time.danger { color: #f44336; text-shadow: 0 0 0.5cm rgba(244,67,54,0.5); animation: blink .5s infinite; }
+
+    .sub-label {
+      font-size: 0.3cm;
+      color: #445;
+      letter-spacing: 0.08cm;
+    }
+
+    /* 버튼 */
+    .btns {
+      display: flex;
+      gap: 0.4cm;
+      margin-top: 0.1cm;
+    }
+    button {
+      font-size: 0.5cm;
+      padding: 0.25cm 0.9cm;
+      border: 0.05cm solid #00e5ff55;
+      background: transparent;
+      color: #00e5ff;
+      border-radius: 0.5cm;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.05cm;
+      transition: all 0.15s;
+    }
+    button:hover  { background: #00e5ff18; border-color: #00e5ff; }
+    button:active { background: #00e5ff30; }
+
+    /* 상태 텍스트 */
+    .status {
+      font-size: 0.3cm;
+      color: #334;
+      letter-spacing: 0.05cm;
+      height: 0.4cm;
+    }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.15; }
+    }
+
+    /* ── 알람 오버레이 ── */
+    .alarm {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #c62828 0%, #7b0000 100%);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5cm;
+      z-index: 999;
+    }
+    .alarm.show { display: flex; }
+
+    .alarm-icon {
+      font-size: 3.5cm;
+      animation: ring 0.3s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 0.5cm rgba(255,200,0,0.8));
+    }
+    .alarm-title {
+      font-size: 0.9cm;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 0.1cm;
+    }
+    .alarm-sub {
+      font-size: 0.4cm;
+      color: #ffcccc;
+      letter-spacing: 0.05cm;
+    }
+    .alarm-ok {
+      margin-top: 0.3cm;
+      font-size: 0.5cm;
+      padding: 0.3cm 1.5cm;
+      border: 0.05cm solid #ffffff88;
+      color: #fff;
+      border-radius: 1cm;
+    }
+    .alarm-ok:hover { background: #ffffff22; border-color: #fff; }
+
+    @keyframes ring {
+      from { transform: rotate(-20deg) scale(1);   }
+      to   { transform: rotate( 20deg) scale(1.08); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="label">⏱ &nbsp; C O U N T D O W N</div>
+
+  <div class="ring-wrap">
+    <svg viewBox="0 0 300 300">
+      <circle class="ring-bg"   cx="150" cy="150" r="130"/>
+      <circle class="ring-fill" cx="150" cy="150" r="130" id="ring"/>
+    </svg>
+    <div class="ring-inner">
+      <div class="time" id="disp">01:00:00</div>
+      <div class="sub-label" id="subLabel">1시간</div>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button id="playBtn" onclick="toggle()">▶&nbsp; 시작</button>
+    <button onclick="reset()">↺&nbsp; 리셋</button>
+  </div>
+
+  <div class="status" id="status">버튼을 눌러 시작하세요</div>
+</div>
+
+<!-- 알람 팝업 오버레이 -->
+<div class="alarm" id="alarm">
+  <div class="alarm-icon">⏰</div>
+  <div class="alarm-title">시간 종료!</div>
+  <div class="alarm-sub">1시간이 완료되었습니다</div>
+  <button class="alarm-ok" onclick="dismiss()">✓&nbsp; 확인</button>
+</div>
+
+<script>
+  /* ── 팝업 자동 실행 ── */
+  (function () {
+    const isPopup = new URLSearchParams(location.search).has('p') || window.opener !== null;
+    if (!isPopup) {
+      const PX = Math.round(15 * 96 / 2.54); // 15cm → px (≈567)
+      const f  = `width=${PX + 22},height=${PX + 46},toolbar=no,location=no,` +
+                 `status=no,menubar=no,scrollbars=no,resizable=no`;
+      const popup = window.open(location.origin + location.pathname + '?p=1', '1h_timer', f);
+      if (popup) {
+        document.body.style.display = 'none';
+        document.title = '(팝업 열림)';
+      }
+    }
+  })();
+
+  /* ── 타이머 로직 ── */
+  const TOTAL   = 3600;
+  const CIRCUM  = 2 * Math.PI * 130; // 816.8... → 사용값 879.6은 r=140 기준; 수정
+  const C       = 2 * Math.PI * 130; // ≈ 816.81
+
+  let rem     = TOTAL;
+  let running = false;
+  let timerId = null;
+  let audioCtx= null;
+
+  const dispEl   = document.getElementById('disp');
+  const ringEl   = document.getElementById('ring');
+  const playBtn  = document.getElementById('playBtn');
+  const statusEl = document.getElementById('status');
+  const subEl    = document.getElementById('subLabel');
+  const alarmEl  = document.getElementById('alarm');
+
+  // 올바른 circumference 반영
+  ringEl.style.strokeDasharray  = C;
+  ringEl.style.strokeDashoffset = 0;
+
+  function fmt(s) {
+    const h  = Math.floor(s / 3600);
+    const m  = Math.floor((s % 3600) / 60);
+    const sc = s % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
+  }
+
+  function fmtSub(s) {
+    if (s >= 3600) return '1시간';
+    if (s >= 60)   return `${Math.floor(s/60)}분 ${s%60}초`;
+    return `${s}초 남음`;
+  }
+
+  function draw() {
+    dispEl.textContent = fmt(rem);
+    subEl.textContent  = fmtSub(rem);
+    ringEl.style.strokeDashoffset = C * (1 - rem / TOTAL);
+
+    const cls = rem <= 60 ? 'danger' : rem <= 300 ? 'warn' : '';
+    dispEl.className   = 'time ' + cls;
+    ringEl.className   = 'ring-fill ' + cls;
+  }
+
+  function toggle() {
+    if (running) {
+      clearInterval(timerId);
+      running = false;
+      playBtn.innerHTML   = '▶&nbsp; 시작';
+      statusEl.textContent = '일시정지';
+    } else {
+      if (rem <= 0) return;
+      running = true;
+      playBtn.innerHTML   = '⏸&nbsp; 정지';
+      statusEl.textContent = '진행 중…';
+      timerId = setInterval(() => {
+        rem--;
+        draw();
+        if (rem <= 0) {
+          clearInterval(timerId);
+          running = false;
+          playBtn.innerHTML   = '▶&nbsp; 시작';
+          statusEl.textContent = '완료!';
+          triggerAlarm();
+        }
+      }, 1000);
+    }
+  }
+
+  function reset() {
+    clearInterval(timerId);
+    running = false;
+    rem = TOTAL;
+    playBtn.innerHTML   = '▶&nbsp; 시작';
+    statusEl.textContent = '버튼을 눌러 시작하세요';
+    alarmEl.classList.remove('show');
+    stopSound();
+    draw();
+  }
+
+  /* ── 알람 ── */
+  function triggerAlarm() {
+    alarmEl.classList.add('show');
+    playSound();
+  }
+  function dismiss() {
+    alarmEl.classList.remove('show');
+    stopSound();
+  }
+  function stopSound() {
+    if (audioCtx) { audioCtx.close().catch(()=>{}); audioCtx = null; }
+  }
+  function playSound() {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = audioCtx;
+      const pattern = [
+        [880, 0.00], [1100, 0.18], [880, 0.36], [1320, 0.54],
+        [880, 0.90], [1100, 1.08], [880, 1.26], [1320, 1.44],
+        [660, 1.80], [880, 2.10], [1100, 2.40], [1320, 2.70],
+      ];
+      pattern.forEach(([freq, t]) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const st = ctx.currentTime + t;
+        gain.gain.setValueAtTime(0, st);
+        gain.gain.linearRampToValueAtTime(0.4, st + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, st + 0.17);
+        osc.start(st);
+        osc.stop(st + 0.18);
+      });
+    } catch(e) {}
+  }
+
+  draw();
+</script>
+</body>
+</html>
