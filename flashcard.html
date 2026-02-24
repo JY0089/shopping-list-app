@@ -59,9 +59,31 @@
       color: #718096;
       cursor: pointer;
       transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
     }
 
     .back-btn:hover {
+      border-color: #667eea;
+      color: #667eea;
+      background: #ebf4ff;
+    }
+
+    .home-link {
+      display: inline-block;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      color: #718096;
+      text-decoration: none;
+      padding: 6px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+    }
+
+    .home-link:hover {
       border-color: #667eea;
       color: #667eea;
       background: #ebf4ff;
@@ -522,6 +544,7 @@
 </head>
 <body>
   <div class="app">
+    <a class="home-link" href="index.html">← 앱 목록</a>
 
     <!-- ════ 홈: 덱 목록 ════ -->
     <div id="view-home" class="view active card">
