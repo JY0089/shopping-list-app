@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>암기카드 앱</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -21,12 +17,9 @@
       padding: 40px 16px;
     }
 
-    .app {
-      width: 100%;
-      max-width: 520px;
-    }
+    .app { width: 100%; max-width: 520px; }
 
-    /* ── 공통 카드 래퍼 ── */
+    /* ── 공통 카드 ── */
     .card {
       background: #fff;
       border-radius: 16px;
@@ -35,7 +28,6 @@
       margin-bottom: 16px;
     }
 
-    /* ── 헤더 ── */
     .header {
       display: flex;
       align-items: center;
@@ -50,7 +42,8 @@
       flex: 1;
     }
 
-    .back-btn {
+    /* ── 링크 버튼 ── */
+    .back-btn, .icon-btn {
       background: none;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
@@ -60,10 +53,11 @@
       cursor: pointer;
       transition: all 0.2s;
       text-decoration: none;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
-
-    .back-btn:hover {
+    .back-btn:hover, .icon-btn:hover {
       border-color: #667eea;
       color: #667eea;
       background: #ebf4ff;
@@ -82,12 +76,7 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
       transition: all 0.2s;
     }
-
-    .home-link:hover {
-      border-color: #667eea;
-      color: #667eea;
-      background: #ebf4ff;
-    }
+    .home-link:hover { border-color: #667eea; color: #667eea; background: #ebf4ff; }
 
     /* ── 입력 폼 ── */
     .input-row {
@@ -95,9 +84,7 @@
       gap: 8px;
       margin-bottom: 20px;
     }
-
-    .input-row input,
-    .input-row textarea {
+    .input-row input {
       flex: 1;
       padding: 12px 16px;
       border: 2px solid #e2e8f0;
@@ -107,15 +94,9 @@
       transition: border-color 0.2s;
       color: #2d3748;
       font-family: inherit;
-      resize: none;
     }
+    .input-row input:focus { border-color: #667eea; }
 
-    .input-row input:focus,
-    .input-row textarea:focus {
-      border-color: #667eea;
-    }
-
-    .input-row button,
     .btn-primary {
       padding: 12px 20px;
       background: #667eea;
@@ -128,11 +109,8 @@
       transition: background 0.2s;
       white-space: nowrap;
     }
-
-    .input-row button:hover,
-    .btn-primary:hover {
-      background: #5a67d8;
-    }
+    .btn-primary:hover { background: #5a67d8; }
+    .btn-primary:disabled { background: #e2e8f0; color: #a0aec0; cursor: default; }
 
     .btn-secondary {
       padding: 12px 20px;
@@ -145,10 +123,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-
-    .btn-secondary:hover {
-      background: #ebf4ff;
-    }
+    .btn-secondary:hover { background: #ebf4ff; }
 
     .btn-danger {
       padding: 6px 12px;
@@ -160,12 +135,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-
-    .btn-danger:hover {
-      border-color: #fc8181;
-      color: #fc8181;
-      background: #fff5f5;
-    }
+    .btn-danger:hover { border-color: #fc8181; color: #fc8181; background: #fff5f5; }
 
     /* ── 빈 상태 ── */
     .empty {
@@ -174,20 +144,10 @@
       padding: 40px 0;
       font-size: 0.95rem;
     }
+    .empty .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
 
-    .empty .empty-icon {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
-
-    /* ════════════════════════════════
-       홈 화면 - 덱 목록
-    ════════════════════════════════ */
-    .deck-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    /* ════ 홈 ════ */
+    .deck-list { display: flex; flex-direction: column; gap: 12px; }
 
     .deck-item {
       display: flex;
@@ -198,38 +158,14 @@
       border-radius: 12px;
       cursor: pointer;
       transition: all 0.2s;
-      background: #fff;
     }
+    .deck-item:hover { border-color: #667eea; box-shadow: 0 2px 12px rgba(102,126,234,0.12); }
 
-    .deck-item:hover {
-      border-color: #667eea;
-      box-shadow: 0 2px 12px rgba(102,126,234,0.12);
-    }
-
-    .deck-icon {
-      font-size: 1.8rem;
-    }
-
-    .deck-info {
-      flex: 1;
-    }
-
-    .deck-name {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #2d3748;
-    }
-
-    .deck-meta {
-      font-size: 0.82rem;
-      color: #718096;
-      margin-top: 3px;
-    }
-
-    .deck-actions {
-      display: flex;
-      gap: 6px;
-    }
+    .deck-icon { font-size: 1.8rem; }
+    .deck-info { flex: 1; }
+    .deck-name { font-size: 1rem; font-weight: 600; color: #2d3748; }
+    .deck-meta { font-size: 0.82rem; color: #718096; margin-top: 3px; }
+    .deck-actions { display: flex; gap: 6px; }
 
     .study-btn {
       padding: 8px 16px;
@@ -241,29 +177,17 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
-      white-space: nowrap;
     }
+    .study-btn:hover { background: #5a67d8; }
+    .study-btn:disabled { background: #e2e8f0; color: #a0aec0; cursor: default; }
 
-    .study-btn:hover {
-      background: #5a67d8;
-    }
-
-    .study-btn:disabled {
-      background: #e2e8f0;
-      color: #a0aec0;
-      cursor: default;
-    }
-
-    /* ════════════════════════════════
-       편집 화면 - 카드 목록
-    ════════════════════════════════ */
+    /* ════ 편집기 ════ */
     .card-form {
       background: #f7fafc;
       border-radius: 12px;
       padding: 20px;
       margin-bottom: 20px;
     }
-
     .card-form h3 {
       font-size: 0.9rem;
       font-weight: 600;
@@ -272,11 +196,7 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-
-    .form-field {
-      margin-bottom: 10px;
-    }
-
+    .form-field { margin-bottom: 10px; }
     .form-field label {
       display: block;
       font-size: 0.8rem;
@@ -284,7 +204,6 @@
       color: #718096;
       margin-bottom: 5px;
     }
-
     .form-field textarea {
       width: 100%;
       padding: 10px 14px;
@@ -298,10 +217,7 @@
       resize: vertical;
       min-height: 60px;
     }
-
-    .form-field textarea:focus {
-      border-color: #667eea;
-    }
+    .form-field textarea:focus { border-color: #667eea; }
 
     .form-actions {
       display: flex;
@@ -309,76 +225,92 @@
       margin-top: 12px;
     }
 
-    .flashcard-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    .flashcard-list { display: flex; flex-direction: column; gap: 10px; }
 
     .flashcard-item {
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       padding: 14px 16px;
-      background: #fff;
     }
-
     .flashcard-item-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 10px;
     }
-
-    .flashcard-item-number {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #a0aec0;
-      min-width: 24px;
-    }
-
-    .flashcard-item-content {
-      flex: 1;
-    }
-
-    .flashcard-item-q {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #2d3748;
-      margin-bottom: 6px;
-    }
-
-    .flashcard-item-a {
-      font-size: 0.85rem;
-      color: #718096;
-    }
-
-    .flashcard-item-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 2px;
-    }
-
+    .flashcard-item-number { font-size: 0.75rem; font-weight: 700; color: #a0aec0; min-width: 24px; }
+    .flashcard-item-content { flex: 1; }
+    .flashcard-item-q { font-size: 0.9rem; font-weight: 600; color: #2d3748; margin-bottom: 6px; }
+    .flashcard-item-a { font-size: 0.85rem; color: #718096; }
+    .flashcard-item-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
     .label-q { color: #667eea; }
     .label-a { color: #48bb78; }
+    .cards-count { font-size: 0.85rem; color: #718096; margin-bottom: 14px; }
+    .cards-count strong { color: #2d3748; }
 
-    .cards-count {
-      font-size: 0.85rem;
-      color: #718096;
+    /* ════ PDF 업로드 섹션 ════ */
+    .pdf-section {
+      border: 2px dashed #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .pdf-section.drag-over {
+      border-color: #667eea;
+      background: #ebf4ff;
+    }
+
+    .pdf-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 14px;
     }
-
-    .cards-count strong {
-      color: #2d3748;
+    .pdf-section-header h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4a5568;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    /* ════════════════════════════════
-       학습 화면
-    ════════════════════════════════ */
-    .study-progress {
-      margin-bottom: 24px;
+    .pdf-drop-hint {
+      text-align: center;
+      padding: 16px 0;
     }
+    .pdf-drop-hint .pdf-icon { font-size: 2rem; margin-bottom: 8px; }
+    .pdf-drop-hint p { font-size: 0.85rem; color: #718096; margin-bottom: 12px; }
+
+    .pdf-options {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .pdf-count-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #718096;
+    }
+    .pdf-count-row input[type="number"] {
+      width: 60px;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+      outline: none;
+    }
+    .pdf-count-row input[type="number"]:focus { border-color: #667eea; }
+
+    /* ════ 학습 화면 ════ */
+    .study-progress { margin-bottom: 24px; }
 
     .progress-text {
       display: flex;
@@ -387,14 +319,7 @@
       color: #718096;
       margin-bottom: 8px;
     }
-
-    .progress-bar {
-      height: 6px;
-      background: #e2e8f0;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
+    .progress-bar { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
     .progress-fill {
       height: 100%;
       background: linear-gradient(90deg, #667eea, #764ba2);
@@ -402,13 +327,7 @@
       transition: width 0.3s ease;
     }
 
-    /* 플립 카드 */
-    .flip-container {
-      perspective: 1000px;
-      margin-bottom: 28px;
-      cursor: pointer;
-    }
-
+    .flip-container { perspective: 1000px; margin-bottom: 28px; cursor: pointer; }
     .flip-card {
       position: relative;
       width: 100%;
@@ -416,10 +335,7 @@
       transform-style: preserve-3d;
       transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    .flip-card.flipped {
-      transform: rotateY(180deg);
-    }
+    .flip-card.flipped { transform: rotateY(180deg); }
 
     .flip-face {
       position: absolute;
@@ -435,55 +351,14 @@
       padding: 32px 28px;
       text-align: center;
     }
+    .flip-front { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+    .flip-back { background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%); color: #fff; transform: rotateY(180deg); }
 
-    .flip-front {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-    }
+    .face-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.75; margin-bottom: 16px; }
+    .face-text { font-size: 1.25rem; font-weight: 600; line-height: 1.5; }
+    .flip-hint { font-size: 0.75rem; opacity: 0.6; margin-top: 16px; }
 
-    .flip-back {
-      background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%);
-      color: #fff;
-      transform: rotateY(180deg);
-    }
-
-    .face-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      opacity: 0.75;
-      margin-bottom: 16px;
-    }
-
-    .face-text {
-      font-size: 1.25rem;
-      font-weight: 600;
-      line-height: 1.5;
-    }
-
-    .flip-hint {
-      font-size: 0.75rem;
-      opacity: 0.6;
-      margin-top: 16px;
-    }
-
-    /* 카드 높이 확보용 더미 */
-    .flip-container .flip-card-sizer {
-      visibility: hidden;
-      min-height: 200px;
-      padding: 32px 28px;
-      font-size: 1.25rem;
-      font-weight: 600;
-      line-height: 1.5;
-    }
-
-    .study-nav {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-    }
-
+    .study-nav { display: flex; gap: 12px; justify-content: center; }
     .study-nav button {
       flex: 1;
       padding: 14px;
@@ -496,50 +371,206 @@
       background: #fff;
       color: #4a5568;
     }
+    .study-nav button:hover:not(:disabled) { border-color: #667eea; color: #667eea; background: #ebf4ff; }
+    .study-nav button:disabled { opacity: 0.35; cursor: default; }
 
-    .study-nav button:hover:not(:disabled) {
-      border-color: #667eea;
-      color: #667eea;
-      background: #ebf4ff;
-    }
+    .study-complete { text-align: center; padding: 20px 0; }
+    .study-complete .complete-icon { font-size: 3rem; margin-bottom: 12px; }
+    .study-complete h2 { font-size: 1.3rem; font-weight: 700; color: #1a202c; margin-bottom: 8px; }
+    .study-complete p { font-size: 0.9rem; color: #718096; margin-bottom: 24px; }
+    .study-complete .btn-row { display: flex; gap: 10px; justify-content: center; }
 
-    .study-nav button:disabled {
-      opacity: 0.35;
-      cursor: default;
-    }
-
-    .study-complete {
-      text-align: center;
-      padding: 20px 0;
-    }
-
-    .study-complete .complete-icon {
-      font-size: 3rem;
-      margin-bottom: 12px;
-    }
-
-    .study-complete h2 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #1a202c;
-      margin-bottom: 8px;
-    }
-
-    .study-complete p {
-      font-size: 0.9rem;
-      color: #718096;
-      margin-bottom: 24px;
-    }
-
-    .study-complete .btn-row {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    /* 뷰 전환 */
     .view { display: none; }
     .view.active { display: block; }
+
+    /* ════ 모달 ════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-overlay.hidden { display: none; }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      width: 100%;
+      max-width: 480px;
+      padding: 28px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; color: #1a202c; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      color: #a0aec0;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .modal-close:hover { color: #4a5568; background: #f7fafc; }
+
+    /* 설정 모달 */
+    .settings-field { margin-bottom: 18px; }
+    .settings-field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 6px;
+    }
+    .settings-field .field-desc {
+      font-size: 0.78rem;
+      color: #a0aec0;
+      margin-top: 5px;
+    }
+    .api-key-wrap { position: relative; }
+    .api-key-wrap input {
+      width: 100%;
+      padding: 10px 42px 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: monospace;
+      color: #2d3748;
+    }
+    .api-key-wrap input:focus { border-color: #667eea; }
+    .toggle-key {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #a0aec0;
+      padding: 4px;
+      line-height: 1;
+    }
+    .toggle-key:hover { color: #4a5568; }
+
+    /* 처리 모달 */
+    .processing-box { text-align: center; padding: 12px 0; }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .processing-status { font-size: 0.9rem; color: #4a5568; margin-bottom: 6px; }
+    .processing-sub { font-size: 0.8rem; color: #a0aec0; }
+
+    /* 카드 미리보기 모달 */
+    .preview-summary {
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 14px;
+    }
+    .preview-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .preview-toolbar button {
+      font-size: 0.8rem;
+      padding: 5px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      background: #fff;
+      color: #718096;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preview-toolbar button:hover { border-color: #667eea; color: #667eea; }
+
+    .preview-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+    .preview-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+    .preview-item:hover { border-color: #667eea; background: #f7faff; }
+    .preview-item.selected { border-color: #667eea; background: #ebf4ff; }
+
+    .preview-check {
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      border: 2px solid #cbd5e0;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #fff;
+      background: #fff;
+      transition: all 0.15s;
+      margin-top: 1px;
+    }
+    .preview-item.selected .preview-check { background: #667eea; border-color: #667eea; }
+
+    .preview-content { flex: 1; }
+    .preview-q { font-size: 0.88rem; font-weight: 600; color: #2d3748; margin-bottom: 4px; }
+    .preview-a { font-size: 0.82rem; color: #718096; }
+    .preview-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .preview-label-q { color: #667eea; }
+    .preview-label-a { color: #48bb78; }
+
+    .preview-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding-top: 14px;
+      border-top: 1px solid #f0f4f8;
+    }
+
+    /* 알림 토스트 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #2d3748;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 2000;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
@@ -550,11 +581,12 @@
     <div id="view-home" class="view active card">
       <div class="header">
         <h1>암기카드</h1>
+        <button class="icon-btn" onclick="openSettings()">⚙️ 설정</button>
       </div>
 
       <div class="input-row" style="margin-bottom: 28px;">
         <input id="deckNameInput" type="text" placeholder="새 덱 이름 입력..." autocomplete="off" />
-        <button onclick="createDeck()">덱 추가</button>
+        <button class="btn-primary" onclick="createDeck()">덱 추가</button>
       </div>
 
       <div id="deckList" class="deck-list"></div>
@@ -571,8 +603,9 @@
         <h1 id="editorTitle">덱 편집</h1>
       </div>
 
+      <!-- 수동 카드 추가 -->
       <div class="card-form">
-        <h3>카드 추가</h3>
+        <h3>카드 직접 추가</h3>
         <div class="form-field">
           <label>질문 (앞면)</label>
           <textarea id="questionInput" placeholder="질문을 입력하세요..." rows="2"></textarea>
@@ -586,11 +619,33 @@
         </div>
       </div>
 
+      <!-- PDF 업로드 섹션 -->
+      <div class="pdf-section" id="pdfSection">
+        <div class="pdf-section-header">
+          <h3>📄 PDF에서 카드 자동 생성</h3>
+        </div>
+
+        <div class="pdf-drop-hint" id="pdfDropHint">
+          <div class="pdf-icon">📁</div>
+          <p>PDF 파일을 드래그하거나 아래 버튼으로 선택하세요</p>
+          <div class="pdf-options">
+            <button class="btn-primary" onclick="document.getElementById('pdfFileInput').click()">PDF 파일 선택</button>
+            <div class="pdf-count-row">
+              문제
+              <input type="number" id="cardCount" value="20" min="1" max="50" />
+              개 생성
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:0.78rem;color:#a0aec0;" id="apiKeyStatus"></div>
+        </div>
+        <input type="file" id="pdfFileInput" accept=".pdf" style="display:none" />
+      </div>
+
       <div id="cardsCount" class="cards-count"></div>
       <div id="flashcardList" class="flashcard-list"></div>
       <div id="editorEmpty" class="empty" style="display:none;">
         <div class="empty-icon">🃏</div>
-        <div>카드가 없어요.<br>위에서 카드를 추가해 보세요!</div>
+        <div>카드가 없어요.<br>위에서 카드를 추가하거나 PDF를 업로드하세요!</div>
       </div>
     </div>
 
@@ -643,15 +698,82 @@
         </div>
       </div>
     </div>
-
   </div>
 
+  <!-- ════ 설정 모달 ════ -->
+  <div id="settingsModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>⚙️ 설정</h2>
+        <button class="modal-close" onclick="closeSettings()">✕</button>
+      </div>
+
+      <div class="settings-field">
+        <label>Claude API 키 (PDF 자동 문제 생성용)</label>
+        <div class="api-key-wrap">
+          <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" />
+          <button class="toggle-key" onclick="toggleKeyVisibility()" id="toggleKeyBtn">👁</button>
+        </div>
+        <p class="field-desc">
+          API 키를 입력하면 PDF 내용을 AI가 분석하여 문제를 자동 생성합니다.<br>
+          키 없이도 기본 방식으로 문제를 만들 수 있습니다.<br>
+          키는 이 기기에만 저장되며 외부로 전송되지 않습니다.
+        </p>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="closeSettings()">취소</button>
+        <button class="btn-primary" onclick="saveSettings()">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 처리 중 모달 ════ -->
+  <div id="processingModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:320px;">
+      <div class="processing-box">
+        <div class="spinner"></div>
+        <p class="processing-status" id="processingStatus">PDF 텍스트 추출 중...</p>
+        <p class="processing-sub" id="processingSub">잠시만 기다려 주세요</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 카드 미리보기 모달 ════ -->
+  <div id="previewModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>생성된 카드 미리보기</h2>
+        <button class="modal-close" onclick="closePreview()">✕</button>
+      </div>
+      <p class="preview-summary" id="previewSummary">0개의 카드가 생성되었습니다.</p>
+      <div class="preview-toolbar">
+        <button onclick="selectAllPreview(true)">전체 선택</button>
+        <button onclick="selectAllPreview(false)">전체 해제</button>
+      </div>
+      <div class="preview-list" id="previewList"></div>
+      <div class="preview-footer">
+        <button class="btn-secondary" onclick="closePreview()">취소</button>
+        <button class="btn-primary" id="addSelectedBtn" onclick="addSelectedCards()">선택한 카드 추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 -->
+  <div id="toast" class="toast"></div>
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
     // ── 상태 ──────────────────────────────────────
     let decks = [];
     let currentDeckId = null;
     let studyIndex = 0;
     let isFlipped = false;
+    let generatedCards = []; // PDF로 생성된 카드 목록
 
     // ── 유틸 ──────────────────────────────────────
     function uid() {
@@ -671,6 +793,63 @@
       return decks.find(d => d.id === id);
     }
 
+    function escHtml(str) {
+      return str
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    // ── API 키 ────────────────────────────────────
+    function loadApiKey() {
+      return localStorage.getItem('claude-api-key') || '';
+    }
+
+    function saveApiKey(key) {
+      localStorage.setItem('claude-api-key', key);
+    }
+
+    function updateApiKeyStatus() {
+      const key = loadApiKey();
+      const el = document.getElementById('apiKeyStatus');
+      if (key) {
+        el.textContent = '✅ API 키 설정됨 — AI가 문제를 자동 생성합니다';
+        el.style.color = '#48bb78';
+      } else {
+        el.textContent = '⚠️ API 키 미설정 — 기본 방식(패턴 인식)으로 문제를 생성합니다';
+        el.style.color = '#ed8936';
+      }
+    }
+
+    // ── 설정 모달 ─────────────────────────────────
+    function openSettings() {
+      document.getElementById('apiKeyInput').value = loadApiKey();
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function saveSettings() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      saveApiKey(key);
+      closeSettings();
+      updateApiKeyStatus();
+      showToast(key ? 'API 키가 저장되었습니다' : 'API 키가 삭제되었습니다');
+    }
+
+    function toggleKeyVisibility() {
+      const input = document.getElementById('apiKeyInput');
+      const btn = document.getElementById('toggleKeyBtn');
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁';
+      }
+    }
+
     // ── 뷰 전환 ───────────────────────────────────
     function showView(name) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -686,6 +865,7 @@
     function openEditor(deckId) {
       currentDeckId = deckId;
       renderEditor();
+      updateApiKeyStatus();
       showView('editor');
     }
 
@@ -702,7 +882,6 @@
       const input = document.getElementById('deckNameInput');
       const name = input.value.trim();
       if (!name) return;
-
       decks.push({ id: uid(), name, cards: [] });
       input.value = '';
       save();
@@ -731,7 +910,6 @@
       decks.forEach(deck => {
         const item = document.createElement('div');
         item.className = 'deck-item';
-
         item.innerHTML = `
           <div class="deck-icon">🗂️</div>
           <div class="deck-info">
@@ -739,13 +917,12 @@
             <div class="deck-meta">카드 ${deck.cards.length}개</div>
           </div>
           <div class="deck-actions">
-            <button class="study-btn" ${deck.cards.length === 0 ? 'disabled' : ''} onclick="event.stopPropagation(); openStudy('${deck.id}')">
-              학습
-            </button>
-            <button class="btn-danger" onclick="event.stopPropagation(); deleteDeck('${deck.id}')">삭제</button>
+            <button class="study-btn" ${deck.cards.length === 0 ? 'disabled' : ''}
+              onclick="event.stopPropagation(); openStudy('${deck.id}')">학습</button>
+            <button class="btn-danger"
+              onclick="event.stopPropagation(); deleteDeck('${deck.id}')">삭제</button>
           </div>
         `;
-
         item.addEventListener('click', () => openEditor(deck.id));
         listEl.appendChild(item);
       });
@@ -755,14 +932,9 @@
     function addCard() {
       const deck = getDeck(currentDeckId);
       if (!deck) return;
-
       const q = document.getElementById('questionInput').value.trim();
       const a = document.getElementById('answerInput').value.trim();
-      if (!q || !a) {
-        alert('질문과 답변을 모두 입력해 주세요.');
-        return;
-      }
-
+      if (!q || !a) { alert('질문과 답변을 모두 입력해 주세요.'); return; }
       deck.cards.push({ id: uid(), question: q, answer: a });
       document.getElementById('questionInput').value = '';
       document.getElementById('answerInput').value = '';
@@ -788,7 +960,6 @@
       const listEl = document.getElementById('flashcardList');
       const emptyEl = document.getElementById('editorEmpty');
       const countEl = document.getElementById('cardsCount');
-
       listEl.innerHTML = '';
 
       if (deck.cards.length === 0) {
@@ -808,12 +979,10 @@
             <div class="flashcard-item-number">#${i + 1}</div>
             <div class="flashcard-item-content">
               <div class="flashcard-item-q">
-                <span class="flashcard-item-label label-q">Q</span>
-                ${escHtml(card.question)}
+                <span class="flashcard-item-label label-q">Q</span> ${escHtml(card.question)}
               </div>
               <div class="flashcard-item-a">
-                <span class="flashcard-item-label label-a">A</span>
-                ${escHtml(card.answer)}
+                <span class="flashcard-item-label label-a">A</span> ${escHtml(card.answer)}
               </div>
             </div>
             <button class="btn-danger" onclick="deleteCard('${card.id}')">삭제</button>
@@ -836,22 +1005,18 @@
       document.getElementById('studyArea').style.display = 'block';
       document.getElementById('studyComplete').style.display = 'none';
 
-      // 진행 바
-      const pct = total > 0 ? Math.round(((idx) / total) * 100) : 0;
+      const pct = total > 0 ? Math.round((idx / total) * 100) : 0;
       document.getElementById('progressLabel').textContent = `${idx + 1} / ${total}`;
       document.getElementById('progressPct').textContent = pct + '%';
       document.getElementById('progressFill').style.width = pct + '%';
 
-      // 카드 내용
       const card = deck.cards[idx];
       document.getElementById('questionText').textContent = card.question;
       document.getElementById('answerText').textContent = card.answer;
 
-      // 플립 상태 초기화
       document.getElementById('flipCard').classList.remove('flipped');
       isFlipped = false;
 
-      // 버튼 상태
       document.getElementById('prevBtn').disabled = idx === 0;
       document.getElementById('nextBtn').textContent = idx === total - 1 ? '완료' : '다음 →';
     }
@@ -862,26 +1027,19 @@
     }
 
     function prevCard() {
-      if (studyIndex > 0) {
-        studyIndex--;
-        renderStudy();
-      }
+      if (studyIndex > 0) { studyIndex--; renderStudy(); }
     }
 
     function nextCard() {
       const deck = getDeck(currentDeckId);
       if (!deck) return;
-
       if (studyIndex < deck.cards.length - 1) {
         studyIndex++;
         renderStudy();
       } else {
-        // 완료
         document.getElementById('studyArea').style.display = 'none';
-        const completeEl = document.getElementById('studyComplete');
-        completeEl.style.display = 'block';
-        document.getElementById('completeMsg').textContent =
-          `총 ${deck.cards.length}개의 카드를 모두 학습했습니다.`;
+        document.getElementById('studyComplete').style.display = 'block';
+        document.getElementById('completeMsg').textContent = `총 ${deck.cards.length}개의 카드를 모두 학습했습니다.`;
         document.getElementById('progressLabel').textContent = `${deck.cards.length} / ${deck.cards.length}`;
         document.getElementById('progressPct').textContent = '100%';
         document.getElementById('progressFill').style.width = '100%';
@@ -894,29 +1052,292 @@
       renderStudy();
     }
 
-    // ── XSS 방지 ──────────────────────────────────
-    function escHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    // ════════════════════════════════════════════════
+    //  PDF → 카드 생성
+    // ════════════════════════════════════════════════
+
+    // PDF.js 텍스트 추출
+    async function extractPdfText(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const lines = [];
+        let lastY = null;
+        for (const item of content.items) {
+          if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+            lines.push('\n');
+          }
+          lines.push(item.str);
+          lastY = item.transform[5];
+        }
+        text += lines.join(' ') + '\n\n';
+      }
+      return text.trim();
     }
+
+    // Claude AI로 카드 생성
+    async function generateWithAI(text, count) {
+      const apiKey = loadApiKey();
+      const truncated = text.length > 8000 ? text.substring(0, 8000) + '...' : text;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 4096,
+          messages: [{
+            role: 'user',
+            content: `다음 텍스트에서 학습용 플래시카드를 정확히 ${count}개 만들어 주세요.\n중요한 개념, 용어, 핵심 사실을 바탕으로 명확한 질문과 간결한 답변을 작성하세요.\n\n반드시 JSON 배열만 출력하세요 (다른 텍스트 없이):\n[{"question":"질문","answer":"답변"}]\n\n텍스트:\n${truncated}`
+          }]
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const raw = data.content[0].text;
+      const match = raw.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('AI 응답 형식 오류');
+      return JSON.parse(match[0]);
+    }
+
+    // 기본 방식: 패턴으로 카드 생성
+    function generateHeuristic(text, count) {
+      const cards = [];
+      const lines = text
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 8);
+
+      for (const line of lines) {
+        if (cards.length >= count) break;
+
+        // "용어: 설명" 패턴
+        const colonMatch = line.match(/^(.{2,50}?)\s*:\s+(.{5,})/);
+        if (colonMatch && colonMatch[1].length < 60) {
+          cards.push({
+            question: `${colonMatch[1]}이(가) 무엇인가요?`,
+            answer: colonMatch[2].trim()
+          });
+          continue;
+        }
+
+        // 충분히 긴 문장 → 문장 자체를 답변으로
+        if (line.length > 60) {
+          const firstClause = line.split(/[,.!?]/)[0].trim();
+          if (firstClause.length > 15) {
+            cards.push({
+              question: `다음 내용을 설명하세요: "${firstClause.substring(0, 45)}${firstClause.length > 45 ? '...' : ''}"`,
+              answer: line
+            });
+          }
+        }
+      }
+
+      // 부족하면 나머지 단락으로 보충
+      if (cards.length < count) {
+        const paragraphs = text.split(/\n{2,}/).filter(p => p.trim().length > 40);
+        for (const para of paragraphs) {
+          if (cards.length >= count) break;
+          const firstSentence = para.split(/[.!?]/)[0].trim();
+          if (firstSentence.length > 15) {
+            const alreadyAdded = cards.some(c => c.answer === para.trim());
+            if (!alreadyAdded) {
+              cards.push({
+                question: `"${firstSentence.substring(0, 50)}${firstSentence.length > 50 ? '...' : ''}"에 대해 설명하세요.`,
+                answer: para.trim().substring(0, 300)
+              });
+            }
+          }
+        }
+      }
+
+      return cards.slice(0, count);
+    }
+
+    // PDF 파일 처리 메인 로직
+    async function handlePdfFile(file) {
+      if (!file || file.type !== 'application/pdf') {
+        showToast('PDF 파일만 지원합니다');
+        return;
+      }
+
+      const count = Math.max(1, Math.min(50,
+        parseInt(document.getElementById('cardCount').value) || 20
+      ));
+
+      const statusEl = document.getElementById('processingStatus');
+      const subEl = document.getElementById('processingSub');
+
+      // 처리 모달 열기
+      document.getElementById('processingModal').classList.remove('hidden');
+      statusEl.textContent = 'PDF 텍스트 추출 중...';
+      subEl.textContent = `"${file.name}"`;
+
+      try {
+        const text = await extractPdfText(file);
+
+        if (text.trim().length < 50) {
+          document.getElementById('processingModal').classList.add('hidden');
+          showToast('텍스트를 추출할 수 없는 PDF입니다 (이미지 PDF는 미지원)');
+          return;
+        }
+
+        const apiKey = loadApiKey();
+        let cards;
+
+        if (apiKey) {
+          statusEl.textContent = 'AI로 문제 생성 중...';
+          subEl.textContent = `${count}개의 카드를 만들고 있어요`;
+          cards = await generateWithAI(text, count);
+        } else {
+          statusEl.textContent = '패턴으로 문제 생성 중...';
+          subEl.textContent = `${count}개의 카드를 만들고 있어요`;
+          // 잠깐 지연으로 UX 향상
+          await new Promise(r => setTimeout(r, 600));
+          cards = generateHeuristic(text, count);
+        }
+
+        document.getElementById('processingModal').classList.add('hidden');
+
+        if (!cards || cards.length === 0) {
+          showToast('카드를 생성하지 못했습니다. 다른 PDF를 시도해 보세요.');
+          return;
+        }
+
+        // 미리보기 모달 열기
+        openPreview(cards);
+
+      } catch (err) {
+        document.getElementById('processingModal').classList.add('hidden');
+        showToast('오류: ' + (err.message || '알 수 없는 오류'));
+        console.error(err);
+      }
+    }
+
+    // ── 카드 미리보기 모달 ─────────────────────────
+    function openPreview(cards) {
+      generatedCards = cards.map((c, i) => ({ ...c, selected: true, _idx: i }));
+      renderPreview();
+      document.getElementById('previewModal').classList.remove('hidden');
+    }
+
+    function closePreview() {
+      document.getElementById('previewModal').classList.add('hidden');
+      generatedCards = [];
+    }
+
+    function renderPreview() {
+      const listEl = document.getElementById('previewList');
+      const summaryEl = document.getElementById('previewSummary');
+      const selectedCount = generatedCards.filter(c => c.selected).length;
+
+      summaryEl.textContent = `총 ${generatedCards.length}개 생성 — ${selectedCount}개 선택됨`;
+      listEl.innerHTML = '';
+
+      generatedCards.forEach((card, i) => {
+        const item = document.createElement('div');
+        item.className = 'preview-item' + (card.selected ? ' selected' : '');
+        item.innerHTML = `
+          <div class="preview-check">${card.selected ? '✓' : ''}</div>
+          <div class="preview-content">
+            <div class="preview-q">
+              <span class="preview-label preview-label-q">Q</span> ${escHtml(card.question)}
+            </div>
+            <div class="preview-a">
+              <span class="preview-label preview-label-a">A</span> ${escHtml(card.answer)}
+            </div>
+          </div>
+        `;
+        item.onclick = () => {
+          generatedCards[i].selected = !generatedCards[i].selected;
+          renderPreview();
+        };
+        listEl.appendChild(item);
+      });
+
+      document.getElementById('addSelectedBtn').textContent =
+        `선택한 카드 ${selectedCount}개 추가`;
+    }
+
+    function selectAllPreview(select) {
+      generatedCards.forEach(c => c.selected = select);
+      renderPreview();
+    }
+
+    function addSelectedCards() {
+      const deck = getDeck(currentDeckId);
+      if (!deck) return;
+
+      const toAdd = generatedCards.filter(c => c.selected);
+      if (toAdd.length === 0) { showToast('선택된 카드가 없습니다'); return; }
+
+      toAdd.forEach(c => {
+        deck.cards.push({ id: uid(), question: c.question, answer: c.answer });
+      });
+
+      save();
+      closePreview();
+      renderEditor();
+      showToast(`${toAdd.length}개의 카드가 추가되었습니다`);
+    }
+
+    // ── 토스트 알림 ───────────────────────────────
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    // ── PDF 드래그 앤 드롭 ────────────────────────
+    const pdfSection = document.getElementById('pdfSection');
+
+    pdfSection.addEventListener('dragover', e => {
+      e.preventDefault();
+      pdfSection.classList.add('drag-over');
+    });
+    pdfSection.addEventListener('dragleave', () => pdfSection.classList.remove('drag-over'));
+    pdfSection.addEventListener('drop', e => {
+      e.preventDefault();
+      pdfSection.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) handlePdfFile(file);
+    });
+
+    document.getElementById('pdfFileInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) handlePdfFile(file);
+      e.target.value = ''; // 같은 파일 재선택 허용
+    });
+
+    // ── 모달 바깥 클릭 닫기 ───────────────────────
+    document.getElementById('settingsModal').addEventListener('click', function(e) {
+      if (e.target === this) closeSettings();
+    });
 
     // ── 키보드 단축키 ─────────────────────────────
     document.addEventListener('keydown', e => {
       const activeView = document.querySelector('.view.active')?.id;
 
-      if (activeView === 'view-home') {
-        if (e.key === 'Enter') createDeck();
-      }
+      if (activeView === 'view-home' && e.key === 'Enter') createDeck();
 
       if (activeView === 'view-study') {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          flipCard();
-        }
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
         if (e.key === 'ArrowRight') nextCard();
         if (e.key === 'ArrowLeft') prevCard();
         if (e.key === 'Escape') goHome();
