@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>암기카드 앱</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    /* ── 공통 카드 래퍼 ── */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 32px 28px;
+      margin-bottom: 16px;
+    }
+
+    /* ── 헤더 ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a202c;
+      flex: 1;
+    }
+
+    .back-btn {
+      background: none;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      color: #718096;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      border-color: #667eea;
+      color: #667eea;
+      background: #ebf4ff;
+    }
+
+    /* ── 입력 폼 ── */
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .input-row input,
+    .input-row textarea {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #2d3748;
+      font-family: inherit;
+      resize: none;
+    }
+
+    .input-row input:focus,
+    .input-row textarea:focus {
+      border-color: #667eea;
+    }
+
+    .input-row button,
+    .btn-primary {
+      padding: 12px 20px;
+      background: #667eea;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .input-row button:hover,
+    .btn-primary:hover {
+      background: #5a67d8;
+    }
+
+    .btn-secondary {
+      padding: 12px 20px;
+      background: none;
+      border: 2px solid #667eea;
+      color: #667eea;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #ebf4ff;
+    }
+
+    .btn-danger {
+      padding: 6px 12px;
+      background: none;
+      border: 1px solid #e2e8f0;
+      color: #a0aec0;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-danger:hover {
+      border-color: #fc8181;
+      color: #fc8181;
+      background: #fff5f5;
+    }
+
+    /* ── 빈 상태 ── */
+    .empty {
+      text-align: center;
+      color: #a0aec0;
+      padding: 40px 0;
+      font-size: 0.95rem;
+    }
+
+    .empty .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    /* ════════════════════════════════
+       홈 화면 - 덱 목록
+    ════════════════════════════════ */
+    .deck-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .deck-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fff;
+    }
+
+    .deck-item:hover {
+      border-color: #667eea;
+      box-shadow: 0 2px 12px rgba(102,126,234,0.12);
+    }
+
+    .deck-icon {
+      font-size: 1.8rem;
+    }
+
+    .deck-info {
+      flex: 1;
+    }
+
+    .deck-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .deck-meta {
+      font-size: 0.82rem;
+      color: #718096;
+      margin-top: 3px;
+    }
+
+    .deck-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .study-btn {
+      padding: 8px 16px;
+      background: #667eea;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .study-btn:hover {
+      background: #5a67d8;
+    }
+
+    .study-btn:disabled {
+      background: #e2e8f0;
+      color: #a0aec0;
+      cursor: default;
+    }
+
+    /* ════════════════════════════════
+       편집 화면 - 카드 목록
+    ════════════════════════════════ */
+    .card-form {
+      background: #f7fafc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-form h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #718096;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-field {
+      margin-bottom: 10px;
+    }
+
+    .form-field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #718096;
+      margin-bottom: 5px;
+    }
+
+    .form-field textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #2d3748;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-field textarea:focus {
+      border-color: #667eea;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .flashcard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .flashcard-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+
+    .flashcard-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .flashcard-item-number {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #a0aec0;
+      min-width: 24px;
+    }
+
+    .flashcard-item-content {
+      flex: 1;
+    }
+
+    .flashcard-item-q {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 6px;
+    }
+
+    .flashcard-item-a {
+      font-size: 0.85rem;
+      color: #718096;
+    }
+
+    .flashcard-item-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .label-q { color: #667eea; }
+    .label-a { color: #48bb78; }
+
+    .cards-count {
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 14px;
+    }
+
+    .cards-count strong {
+      color: #2d3748;
+    }
+
+    /* ════════════════════════════════
+       학습 화면
+    ════════════════════════════════ */
+    .study-progress {
+      margin-bottom: 24px;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+
+    /* 플립 카드 */
+    .flip-container {
+      perspective: 1000px;
+      margin-bottom: 28px;
+      cursor: pointer;
+    }
+
+    .flip-card {
+      position: relative;
+      width: 100%;
+      min-height: 200px;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .flip-card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flip-face {
+      position: absolute;
+      width: 100%;
+      min-height: 200px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 28px;
+      text-align: center;
+    }
+
+    .flip-front {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+
+    .flip-back {
+      background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%);
+      color: #fff;
+      transform: rotateY(180deg);
+    }
+
+    .face-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.75;
+      margin-bottom: 16px;
+    }
+
+    .face-text {
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .flip-hint {
+      font-size: 0.75rem;
+      opacity: 0.6;
+      margin-top: 16px;
+    }
+
+    /* 카드 높이 확보용 더미 */
+    .flip-container .flip-card-sizer {
+      visibility: hidden;
+      min-height: 200px;
+      padding: 32px 28px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .study-nav {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .study-nav button {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid #e2e8f0;
+      background: #fff;
+      color: #4a5568;
+    }
+
+    .study-nav button:hover:not(:disabled) {
+      border-color: #667eea;
+      color: #667eea;
+      background: #ebf4ff;
+    }
+
+    .study-nav button:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .study-complete {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .study-complete .complete-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .study-complete h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin-bottom: 8px;
+    }
+
+    .study-complete p {
+      font-size: 0.9rem;
+      color: #718096;
+      margin-bottom: 24px;
+    }
+
+    .study-complete .btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    /* 뷰 전환 */
+    .view { display: none; }
+    .view.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- ════ 홈: 덱 목록 ════ -->
+    <div id="view-home" class="view active card">
+      <div class="header">
+        <h1>암기카드</h1>
+      </div>
+
+      <div class="input-row" style="margin-bottom: 28px;">
+        <input id="deckNameInput" type="text" placeholder="새 덱 이름 입력..." autocomplete="off" />
+        <button onclick="createDeck()">덱 추가</button>
+      </div>
+
+      <div id="deckList" class="deck-list"></div>
+      <div id="homeEmpty" class="empty" style="display:none;">
+        <div class="empty-icon">🗂️</div>
+        <div>덱이 없어요.<br>위에서 새 덱을 만들어 보세요!</div>
+      </div>
+    </div>
+
+    <!-- ════ 편집: 카드 관리 ════ -->
+    <div id="view-editor" class="view card">
+      <div class="header">
+        <button class="back-btn" onclick="goHome()">← 뒤로</button>
+        <h1 id="editorTitle">덱 편집</h1>
+      </div>
+
+      <div class="card-form">
+        <h3>카드 추가</h3>
+        <div class="form-field">
+          <label>질문 (앞면)</label>
+          <textarea id="questionInput" placeholder="질문을 입력하세요..." rows="2"></textarea>
+        </div>
+        <div class="form-field">
+          <label>답변 (뒷면)</label>
+          <textarea id="answerInput" placeholder="답변을 입력하세요..." rows="2"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="addCard()">카드 추가</button>
+        </div>
+      </div>
+
+      <div id="cardsCount" class="cards-count"></div>
+      <div id="flashcardList" class="flashcard-list"></div>
+      <div id="editorEmpty" class="empty" style="display:none;">
+        <div class="empty-icon">🃏</div>
+        <div>카드가 없어요.<br>위에서 카드를 추가해 보세요!</div>
+      </div>
+    </div>
+
+    <!-- ════ 학습: 플립 카드 ════ -->
+    <div id="view-study" class="view card">
+      <div class="header">
+        <button class="back-btn" onclick="goHome()">← 뒤로</button>
+        <h1 id="studyTitle">학습</h1>
+      </div>
+
+      <div id="studyArea">
+        <div class="study-progress">
+          <div class="progress-text">
+            <span id="progressLabel">1 / 1</span>
+            <span id="progressPct">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="flip-container" id="flipContainer" onclick="flipCard()">
+          <div class="flip-card" id="flipCard">
+            <div class="flip-face flip-front">
+              <div class="face-label">질문</div>
+              <div class="face-text" id="questionText"></div>
+              <div class="flip-hint">클릭하여 답 확인</div>
+            </div>
+            <div class="flip-face flip-back">
+              <div class="face-label">답변</div>
+              <div class="face-text" id="answerText"></div>
+              <div class="flip-hint">클릭하여 다시 뒤집기</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="study-nav">
+          <button id="prevBtn" onclick="prevCard()" disabled>← 이전</button>
+          <button id="nextBtn" onclick="nextCard()">다음 →</button>
+        </div>
+      </div>
+
+      <div id="studyComplete" class="study-complete" style="display:none;">
+        <div class="complete-icon">🎉</div>
+        <h2>학습 완료!</h2>
+        <p id="completeMsg">모든 카드를 학습했습니다.</p>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="restartStudy()">다시 학습</button>
+          <button class="btn-primary" onclick="goHome()">덱 목록으로</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── 상태 ──────────────────────────────────────
+    let decks = [];
+    let currentDeckId = null;
+    let studyIndex = 0;
+    let isFlipped = false;
+
+    // ── 유틸 ──────────────────────────────────────
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    function save() {
+      localStorage.setItem('flashcard-decks', JSON.stringify(decks));
+    }
+
+    function load() {
+      const raw = localStorage.getItem('flashcard-decks');
+      if (raw) decks = JSON.parse(raw);
+    }
+
+    function getDeck(id) {
+      return decks.find(d => d.id === id);
+    }
+
+    // ── 뷰 전환 ───────────────────────────────────
+    function showView(name) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + name).classList.add('active');
+    }
+
+    function goHome() {
+      currentDeckId = null;
+      renderHome();
+      showView('home');
+    }
+
+    function openEditor(deckId) {
+      currentDeckId = deckId;
+      renderEditor();
+      showView('editor');
+    }
+
+    function openStudy(deckId) {
+      currentDeckId = deckId;
+      studyIndex = 0;
+      isFlipped = false;
+      renderStudy();
+      showView('study');
+    }
+
+    // ── 홈 ────────────────────────────────────────
+    function createDeck() {
+      const input = document.getElementById('deckNameInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      decks.push({ id: uid(), name, cards: [] });
+      input.value = '';
+      save();
+      renderHome();
+      input.focus();
+    }
+
+    function deleteDeck(deckId) {
+      if (!confirm('이 덱을 삭제할까요?')) return;
+      decks = decks.filter(d => d.id !== deckId);
+      save();
+      renderHome();
+    }
+
+    function renderHome() {
+      const listEl = document.getElementById('deckList');
+      const emptyEl = document.getElementById('homeEmpty');
+      listEl.innerHTML = '';
+
+      if (decks.length === 0) {
+        emptyEl.style.display = 'block';
+        return;
+      }
+      emptyEl.style.display = 'none';
+
+      decks.forEach(deck => {
+        const item = document.createElement('div');
+        item.className = 'deck-item';
+
+        item.innerHTML = `
+          <div class="deck-icon">🗂️</div>
+          <div class="deck-info">
+            <div class="deck-name">${escHtml(deck.name)}</div>
+            <div class="deck-meta">카드 ${deck.cards.length}개</div>
+          </div>
+          <div class="deck-actions">
+            <button class="study-btn" ${deck.cards.length === 0 ? 'disabled' : ''} onclick="event.stopPropagation(); openStudy('${deck.id}')">
+              학습
+            </button>
+            <button class="btn-danger" onclick="event.stopPropagation(); deleteDeck('${deck.id}')">삭제</button>
+          </div>
+        `;
+
+        item.addEventListener('click', () => openEditor(deck.id));
+        listEl.appendChild(item);
+      });
+    }
+
+    // ── 편집기 ────────────────────────────────────
+    function addCard() {
+      const deck = getDeck(currentDeckId);
+      if (!deck) return;
+
+      const q = document.getElementById('questionInput').value.trim();
+      const a = document.getElementById('answerInput').value.trim();
+      if (!q || !a) {
+        alert('질문과 답변을 모두 입력해 주세요.');
+        return;
+      }
+
+      deck.cards.push({ id: uid(), question: q, answer: a });
+      document.getElementById('questionInput').value = '';
+      document.getElementById('answerInput').value = '';
+      save();
+      renderEditor();
+      document.getElementById('questionInput').focus();
+    }
+
+    function deleteCard(cardId) {
+      const deck = getDeck(currentDeckId);
+      if (!deck) return;
+      deck.cards = deck.cards.filter(c => c.id !== cardId);
+      save();
+      renderEditor();
+    }
+
+    function renderEditor() {
+      const deck = getDeck(currentDeckId);
+      if (!deck) return;
+
+      document.getElementById('editorTitle').textContent = deck.name;
+
+      const listEl = document.getElementById('flashcardList');
+      const emptyEl = document.getElementById('editorEmpty');
+      const countEl = document.getElementById('cardsCount');
+
+      listEl.innerHTML = '';
+
+      if (deck.cards.length === 0) {
+        emptyEl.style.display = 'block';
+        countEl.textContent = '';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      countEl.innerHTML = `총 <strong>${deck.cards.length}</strong>개의 카드`;
+
+      deck.cards.forEach((card, i) => {
+        const item = document.createElement('div');
+        item.className = 'flashcard-item';
+        item.innerHTML = `
+          <div class="flashcard-item-header">
+            <div class="flashcard-item-number">#${i + 1}</div>
+            <div class="flashcard-item-content">
+              <div class="flashcard-item-q">
+                <span class="flashcard-item-label label-q">Q</span>
+                ${escHtml(card.question)}
+              </div>
+              <div class="flashcard-item-a">
+                <span class="flashcard-item-label label-a">A</span>
+                ${escHtml(card.answer)}
+              </div>
+            </div>
+            <button class="btn-danger" onclick="deleteCard('${card.id}')">삭제</button>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    // ── 학습 ──────────────────────────────────────
+    function renderStudy() {
+      const deck = getDeck(currentDeckId);
+      if (!deck) return;
+
+      document.getElementById('studyTitle').textContent = deck.name;
+
+      const total = deck.cards.length;
+      const idx = studyIndex;
+
+      document.getElementById('studyArea').style.display = 'block';
+      document.getElementById('studyComplete').style.display = 'none';
+
+      // 진행 바
+      const pct = total > 0 ? Math.round(((idx) / total) * 100) : 0;
+      document.getElementById('progressLabel').textContent = `${idx + 1} / ${total}`;
+      document.getElementById('progressPct').textContent = pct + '%';
+      document.getElementById('progressFill').style.width = pct + '%';
+
+      // 카드 내용
+      const card = deck.cards[idx];
+      document.getElementById('questionText').textContent = card.question;
+      document.getElementById('answerText').textContent = card.answer;
+
+      // 플립 상태 초기화
+      document.getElementById('flipCard').classList.remove('flipped');
+      isFlipped = false;
+
+      // 버튼 상태
+      document.getElementById('prevBtn').disabled = idx === 0;
+      document.getElementById('nextBtn').textContent = idx === total - 1 ? '완료' : '다음 →';
+    }
+
+    function flipCard() {
+      isFlipped = !isFlipped;
+      document.getElementById('flipCard').classList.toggle('flipped', isFlipped);
+    }
+
+    function prevCard() {
+      if (studyIndex > 0) {
+        studyIndex--;
+        renderStudy();
+      }
+    }
+
+    function nextCard() {
+      const deck = getDeck(currentDeckId);
+      if (!deck) return;
+
+      if (studyIndex < deck.cards.length - 1) {
+        studyIndex++;
+        renderStudy();
+      } else {
+        // 완료
+        document.getElementById('studyArea').style.display = 'none';
+        const completeEl = document.getElementById('studyComplete');
+        completeEl.style.display = 'block';
+        document.getElementById('completeMsg').textContent =
+          `총 ${deck.cards.length}개의 카드를 모두 학습했습니다.`;
+        document.getElementById('progressLabel').textContent = `${deck.cards.length} / ${deck.cards.length}`;
+        document.getElementById('progressPct').textContent = '100%';
+        document.getElementById('progressFill').style.width = '100%';
+      }
+    }
+
+    function restartStudy() {
+      studyIndex = 0;
+      isFlipped = false;
+      renderStudy();
+    }
+
+    // ── XSS 방지 ──────────────────────────────────
+    function escHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // ── 키보드 단축키 ─────────────────────────────
+    document.addEventListener('keydown', e => {
+      const activeView = document.querySelector('.view.active')?.id;
+
+      if (activeView === 'view-home') {
+        if (e.key === 'Enter') createDeck();
+      }
+
+      if (activeView === 'view-study') {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          flipCard();
+        }
+        if (e.key === 'ArrowRight') nextCard();
+        if (e.key === 'ArrowLeft') prevCard();
+        if (e.key === 'Escape') goHome();
+      }
+    });
+
+    // ── 초기화 ────────────────────────────────────
+    load();
+    renderHome();
+  </script>
+</body>
+</html>
