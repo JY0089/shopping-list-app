@@ -363,8 +363,61 @@
       hide('loading');
       hide('weatherContent');
       const el = document.getElementById('error');
-      el.innerHTML = `⚠️ ${msg}`;
+      el.innerHTML = `⚠️ ${msg}<br><br><button onclick="loadSeoul()" style="margin-top:8px;padding:10px 22px;border:none;border-radius:50px;background:rgba(255,255,255,0.2);color:#fff;font-size:0.95rem;cursor:pointer;">서울 날씨 보기</button>`;
       show('error');
+    }
+
+    function loadSeoul() {
+      fetchWeather(37.5665, 126.9780, '서울, 대한민국');
+    }
+
+    function makeMockData(cityLabel) {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      // 계절별 기온
+      const baseTemp = month <= 2 || month === 12 ? 2 :
+                       month <= 5 ? 16 :
+                       month <= 8 ? 29 : 14;
+      const wc = month <= 2 || month === 12 ? 71 :
+                 month <= 5 ? 1 :
+                 month <= 8 ? 80 : 2;
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const fmtDT = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
+
+      const hourlyTimes = Array.from({length: 168}, (_, i) => {
+        const d = new Date(now); d.setMinutes(0,0,0);
+        d.setHours(d.getHours() + i);
+        return fmtDT(d);
+      });
+      const hourlyTemps = hourlyTimes.map((_, i) => {
+        const h = new Date(hourlyTimes[i]).getHours();
+        return +(baseTemp + Math.sin((h - 6) * Math.PI / 12) * 5 + (Math.random() - 0.5) * 2).toFixed(1);
+      });
+      const hourlyWC = hourlyTimes.map(() => wc);
+
+      const dailyTimes = Array.from({length: 7}, (_, i) => {
+        const d = new Date(now); d.setDate(d.getDate() + i);
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      });
+      const dailyMax = dailyTimes.map(() => +(baseTemp + 5 + (Math.random() - 0.5) * 3).toFixed(1));
+      const dailyMin = dailyTimes.map(() => +(baseTemp - 5 + (Math.random() - 0.5) * 3).toFixed(1));
+      const dailyWC = [wc, 0, 1, 3, wc, 1, 0];
+
+      return {
+        current: {
+          time: fmtDT(now),
+          temperature_2m: baseTemp + (Math.random() - 0.5) * 3,
+          apparent_temperature: baseTemp - 2,
+          relative_humidity_2m: 55 + Math.round(Math.random() * 20),
+          precipitation: 0,
+          weather_code: wc,
+          wind_speed_10m: 8 + Math.round(Math.random() * 10),
+        },
+        hourly: { time: hourlyTimes, temperature_2m: hourlyTemps, weather_code: hourlyWC },
+        daily: { time: dailyTimes, weather_code: dailyWC, temperature_2m_max: dailyMax, temperature_2m_min: dailyMin },
+        _isMock: true,
+      };
     }
 
     async function fetchWeather(lat, lon, cityLabel) {
@@ -378,13 +431,17 @@
           `&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min` +
           `&timezone=auto&forecast_days=7`;
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('날씨 데이터를 가져올 수 없습니다.');
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error('API 오류');
         const data = await res.json();
-
         renderWeather(data, cityLabel);
       } catch (e) {
-        showError(e.message || '오류가 발생했습니다.');
+        // API 실패 시 데모 데이터로 표시
+        const mock = makeMockData(cityLabel);
+        renderWeather(mock, cityLabel + ' (데모)');
       }
     }
 
@@ -497,12 +554,8 @@
           }
         },
         err => {
-          const msgs = {
-            1: '위치 접근이 거부되었습니다. 브라우저 설정에서 허용해 주세요.',
-            2: '위치를 가져올 수 없습니다.',
-            3: '위치 요청 시간이 초과되었습니다.',
-          };
-          showError(msgs[err.code] || '위치를 가져올 수 없습니다.');
+          // 위치 실패 시 서울로 폴백
+          fetchWeather(37.5665, 126.9780, '서울, 대한민국');
         },
         { timeout: 10000 }
       );
@@ -513,8 +566,8 @@
       if (e.key === 'Enter') searchCity();
     });
 
-    // 시작: 위치 자동 감지
-    getLocation();
+    // 시작: 서울 기본 로드 (위치 감지는 📍 버튼으로)
+    loadSeoul();
   </script>
 </body>
 </html>
